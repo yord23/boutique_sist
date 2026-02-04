@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('tax_id')->nullable(); // NIT o RUC
+            $table->string('contact_person')->nullable(); // NIT o RUC
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
             $table->text('address')->nullable();
+            $table->string('tax_id')->unique();// NIT o RUC
+            $table->boolean('status')->default(true);
             $table->timestamps();
             
             $table->softDeletes(); // Para no borrar ventas históricas si el empleado se va

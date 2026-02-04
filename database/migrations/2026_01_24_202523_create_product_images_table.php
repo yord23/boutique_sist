@@ -17,11 +17,11 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             
             // Relación opcional con color: Para que al elegir "Verde" en Vue, se filtren estas fotos
-            $table->foreignId('color_id')->nullable()->constrained()->onDelete('set null');
-            
-            $table->string('file_path'); // Ruta: products/nombre-archivo.jpg
+            //$table->foreignId('color_id')->nullable()->constrained()->onDelete('set null');
+            $table->string('url'); // URL completa: https://storage.googleapis.com/bucket-name/products/nombre-archivo.jpg
+            //$table->string('file_path'); // Ruta: products/nombre-archivo.jpg
             $table->boolean('is_primary')->default(false); // La foto que sale en el listado general
-            $table->integer('position')->default(0); // Para que tú decidas el orden (1, 2, 3...)
+           // $table->integer('position')->default(0); // Para que tú decidas el orden (1, 2, 3...)
             $table->timestamps();
         });
     }

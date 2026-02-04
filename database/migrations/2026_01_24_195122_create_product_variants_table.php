@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('size_id')->constrained();
             $table->foreignId('color_id')->constrained();
-            $table->string('sku')->unique(); // Código único para etiquetas
+            $table->string('barcode')->unique()->nullable(); // Código único para etiquetas
             $table->integer('stock')->default(0);
             $table->decimal('price', 10, 2)->nullable(); // Solo si cambia respecto al base
             $table->timestamps();

@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained();
-            $table->foreignId('brand_id')->constrained();
-            $table->foreignId('supplier_id')->constrained();
+            $table->foreignId('category_id')->constrained()->onDelete('restrict');
+            $table->foreignId('brand_id')->constrained()->onDelete('restrict');
+            $table->foreignId('supplier_id')->constrained()->onDelete('restrict');
             $table->string('name');
             $table->text('description')->nullable();
             $table->decimal('base_price', 10, 2);
+            $table->boolean('status')->default(true);
             $table->timestamps();
             
             $table->softDeletes(); // Para no borrar ventas históricas si el empleado se va
