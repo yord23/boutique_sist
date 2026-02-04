@@ -14,13 +14,14 @@ return new class extends Migration
         Schema::create('product_variants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('size_id')->constrained();
-            $table->foreignId('color_id')->constrained();
-            $table->string('barcode')->unique()->nullable(); // Código único para etiquetas
+            $table->foreignId('size_id')->constrained()->onDelete('restrict');
+            $table->foreignId('color_id')->constrained()->onDelete('restrict');
+            $table->string('barcode',50)->unique()->nullable(); // Código único para etiquetas
             $table->integer('stock')->default(0);
             $table->decimal('price', 10, 2)->nullable(); // Solo si cambia respecto al base
             $table->timestamps();
-            
+            // ESTO EVITA DUPLICADOS DE TALLA Y COLOR EN EL MISMO PRODUCTO
+            $table->unique(['product_id', 'size_id', 'color_id'], 'prod_variant_unique');
             $table->softDeletes(); // Para no borrar ventas históricas si el empleado se va
         });
     }
