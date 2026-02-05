@@ -4,82 +4,98 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MarcaController extends Controller
 {
     //
-    /**
-     * Muestra la lista de marcas.
+   /**
+     * Listado con BUSCADOR y PAGINACIÓN (Para tablas grandes)
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Brand::all(), 200);
+        // 1. Capturamos los parámetros de la URL: /api/marca?page=1&limit=10&q=zara
+        $limit = $request->limit ?? 10;
+        $q = $request->q;
+
+        // 2. Iniciamos la consulta base
+        $query = DB::table('brands')
+            ->select('id', 'name', 'status', 'created_at')
+            ->orderBy('id', 'desc');
+
+        // 3. Si el usuario escribió algo en el buscador (q), filtramos
+        if ($q) {
+            $query->where("name", "like", "%$q%");
+        }
+
+        // 4. Ejecutamos la paginación (esto devuelve data, links, meta, etc.)
+        $marcas = $query->paginate($limit);
+
+        return response()->json($marcas, 200);
     }
 
     /**
-     * Almacena una nueva marca.
+     * Listado SIMPLE (Para Selectors/Combobox en Vue)
+     * Usamos la segunda lógica aquí porque para un <select> no quieres paginación
      */
+    public function getList()
+    {
+        $marcas = DB::table('brands')
+            ->select('id', 'name')
+            ->where('status', true)
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return response()->json($marcas, 200);
+    }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:brands,name',
-            'description' => 'nullable|string'
+        $request->validate([
+            "name" => "required|unique:brands,name|max:100"
         ]);
 
-        $brand = Brand::create($validated);
+        $id = DB::table("brands")->insertGetId([
+            "name"       => $request->name,
+            "status"     => $request->status ?? true,
+            "created_at" => now(),
+            "updated_at" => now()
+        ]);
 
-        return response()->json([
-            'message' => 'Marca creada con éxito',
-            'data' => $brand
-        ], 201);
+        return response()->json(["mensaje" => "Marca creada", "id" => $id], 201);
     }
 
-    /**
-     * Muestra una marca específica.
-     */
-    public function show($id)
+    public function show(string $id)
     {
-        $brand = Brand::find($id);
-        
-        if (!$brand) {
-            return response()->json(['message' => 'Marca no encontrada'], 404);
+        $marca = DB::table("brands")->where('id', $id)->first();
+
+        if (!$marca) {
+            return response()->json(["mensaje" => "Marca no encontrada"], 404);
         }
 
-        return response()->json($brand, 200);
+        return response()->json($marca, 200);
     }
 
-    /**
-     * Actualiza una marca existente.
-     */
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
-        $brand = Brand::find($id);
+        $request->validate([
+            "name" => "required|max:100|unique:brands,name," . $id
+        ]);
 
-        if (!$brand) {
-            return response()->json(['message' => 'Marca no encontrada'], 404);
-        }
+        $actualizado = DB::table("brands")
+            ->where('id', $id)
+            ->update([
+                "name"       => $request->name,
+                "status"     => $request->status,
+                "updated_at" => now()
+            ]);
 
-        $brand->update($request->all());
-
-        return response()->json([
-            'message' => 'Marca actualizada',
-            'data' => $brand
-        ], 200);
+        return response()->json(["mensaje" => "Marca actualizada"]);
     }
 
-    /**
-     * Elimina una marca (o la envía a papelera si usas SoftDeletes).
-     */
-    public function destroy($id)
+    public function destroy(string $id)
     {
-        $brand = Brand::find($id);
-
-        if (!$brand) {
-            return response()->json(['message' => 'Marca no encontrada'], 404);
-        }
-
-        $brand->delete();
-
-        return response()->json(['message' => 'Marca eliminada con éxito'], 200);
+        DB::table("brands")->where('id', $id)->delete();
+        return response()->json(["mensaje" => "Marca eliminada"]);
     }
 }
