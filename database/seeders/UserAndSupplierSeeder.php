@@ -21,11 +21,11 @@ class UserAndSupplierSeeder extends Seeder
             'is_active' => true
         ]);
 
-        Supplier::create([
+        /*Supplier::create([
             'name' => 'Distribuidora Textil S.A.',
             'email' => 'ventas@textil.com',
             'phone' => '123456789',
             'tax_id' => '123456789-0', // <--- Agrega esta línea
-        ]);
+        ]);*/
     }
 }

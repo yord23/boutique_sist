@@ -14,29 +14,27 @@ class ProductSeeder extends Seeder
     public function run(): void
     {
         $product = Product::create([
-            'category_id' => 1,
-            'brand_id' => 2,
+            'name' => 'Jean Clásico Slim',
+            'description' => 'Pantalón de mezclilla stretch',
+            'category_id' => 2,
+            'brand_id' => 3,
             'supplier_id' => 1,
-            'name' => 'Blusa Elegante Seda',
-            'description' => 'Blusa de seda ideal para eventos formales',
-            'base_price' => 45.00
+            'base_price' => 45.00,
+            'status' => true
         ]);
 
+        // Variante 1: Negro
         ProductVariant::create([
             'product_id' => $product->id,
-            'size_id' => 2,  // S
-            'color_id' => 3, // Rojo
-            'sku' => 'BLU-SED-S-ROJ',
-            'stock' => 10,
-            'price' => 45.00
+            'size_id' => 6,
+            'color_id' => 1,
+            'barcode' => '770123456789',
+            'stock' => 20
         ]);
-
-        ProductImage::create([
-            'product_id' => $product->id,
-            'color_id' => 3,
-            'file_path' => 'products/sample-blusa.jpg',
-            'is_primary' => true,
-            'position' => 1
+        // Esto hace exactamente lo mismo, pero es más corto
+        $product->images()->create([
+            'url' => 'https://via.placeholder.com/640x480.png/00aaee?text=Jean+Frontal',
+            'is_primary' => true
         ]);
     }
 }
