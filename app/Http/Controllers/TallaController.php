@@ -2,104 +2,74 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Size;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class TallaController extends Controller
 {
-    //
-    /**
-     * Listado SIMPLE (Lógica para tablas pequeñas)
-     * Ideal para cargar tallas en el formulario de productos de Vue.
-     */
+    // Listar todas las tallas
     public function index()
     {
-        $tallas = DB::table('sizes')
-            ->select('id', 'name', 'status')
-            ->orderBy('id', 'asc') // Ordenadas por ID para mantener consistencia de tamaño
-            ->get();
-
-        return response()->json($tallas, 200);
+        try {
+            $tallas = Size::all();
+            return response()->json($tallas, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
-    /**
-     * Guardar una nueva talla
-     */
+    // Guardar una nueva talla
     public function store(Request $request)
     {
         $request->validate([
-            "name" => "required|unique:sizes,name|max:10" // Ej: "XL", "42", "M"
+            'name' => 'required|string|unique:sizes,name|max:50'
         ]);
 
-        $id = DB::table("sizes")->insertGetId([
-            "name"       => $request->name,
-            "status"     => $request->status ?? true,
-            "created_at" => now(),
-            "updated_at" => now()
-        ]);
-
-        return response()->json([
-            "mensaje" => "Talla registrada", 
-            "id" => $id
-        ], 201);
-    }
-
-    /**
-     * Mostrar una talla específica
-     */
-    public function show(string $id)
-    {
-        $talla = DB::table("sizes")->where('id', $id)->first();
-
-        if (!$talla) {
-            return response()->json(["mensaje" => "Talla no encontrada"], 404);
-        }
-
-        return response()->json($talla, 200);
-    }
-
-    /**
-     * Actualizar talla
-     */
-    public function update(Request $request, string $id)
-    {
-        $request->validate([
-            "name"   => "required|max:10|unique:sizes,name," . $id,
-            "status" => "boolean"
-        ]);
-
-        $existe = DB::table("sizes")->where('id', $id)->exists();
-
-        if (!$existe) {
-            return response()->json(["mensaje" => "Talla no encontrada"], 404);
-        }
-
-        DB::table("sizes")
-            ->where('id', $id)
-            ->update([
-                "name"       => $request->name,
-                "status"     => $request->status,
-                "updated_at" => now(),
+        try {
+            $talla = Size::create([
+                'name' => $request->name
             ]);
-
-        return response()->json(["mensaje" => "Talla actualizada correctamente"]);
+            return response()->json($talla, 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al crear talla'], 500);
+        }
     }
 
-    /**
-     * Eliminar talla
-     */
-    public function destroy(string $id)
+    // Mostrar una sola talla
+    public function show($id)
     {
-        $existe = DB::table("sizes")->where('id', $id)->exists();
-
-        if (!$existe) {
-            return response()->json(["mensaje" => "Talla no encontrada"], 404);
+        $talla = Size::find($id);
+        if (!$talla) {
+            return response()->json(['message' => 'Talla no encontrada'], 404);
         }
+        return response()->json($talla);
+    }
 
-        // Nota: Si una talla ya está amarrada a un producto, 
-        // la base de datos dará error por la llave foránea (lo cual es bueno).
-        DB::table("sizes")->where('id', $id)->delete();
+    // Actualizar talla
+    public function update(Request $request, $id)
+    {
+        $talla = Size::find($id);
+        if (!$talla) return response()->json(['message' => 'No encontrado'], 404);
 
-        return response()->json(["mensaje" => "Talla eliminada"]);
+        $request->validate([
+            'name' => 'required|string|max:50|unique:sizes,name,' . $id
+        ]);
+
+        $talla->update($request->only('name'));
+        return response()->json($talla);
+    }
+
+    // Eliminar talla
+    public function destroy($id)
+    {
+        $talla = Size::find($id);
+        if (!$talla) return response()->json(['message' => 'No encontrado'], 404);
+
+        try {
+            $talla->delete();
+            return response()->json(['message' => 'Talla eliminada correctamente']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se puede eliminar porque está en uso'], 400);
+        }
     }
 }

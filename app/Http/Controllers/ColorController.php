@@ -7,99 +7,42 @@ use Illuminate\Support\Facades\DB;
 
 class ColorController extends Controller
 {
-    //
-    /**
-     * Listado SIMPLE (Lógica para tablas pequeñas)
-     */
     public function index()
     {
-        $colores = DB::table('colors')
-            ->select('id', 'name', 'status')
-            ->orderBy('name', 'asc') // Orden alfabético para que el usuario encuentre rápido el color
-            ->get();
-
-        return response()->json($colores, 200);
+        return response()->json(DB::table('colors')->get(), 200);
     }
 
-    /**
-     * Guardar un nuevo color
-     */
     public function store(Request $request)
     {
         $request->validate([
-            "name" => "required|unique:colors,name|max:50" // Ejemplo: "Azul Marino", "Rojo Carmesí"
+            'name' => 'required|max:50',
+            'hex_code' => 'nullable|max:7' // Ejemplo: #FFFFFF
         ]);
 
-        $id = DB::table("colors")->insertGetId([
-            "name"       => $request->name,
-            "status"     => $request->status ?? true,
-            "created_at" => now(),
-            "updated_at" => now()
+        $id = DB::table('colors')->insertGetId([
+            'name' => $request->name,
+            'hex_code' => $request->hex_code,
+            'created_at' => now(),
+            'updated_at' => now()
         ]);
 
-        $nuevoColor = DB::table("colors")->where('id', $id)->first();
-
-        return response()->json([
-            "mensaje" => "Color registrado con éxito",
-            "datos"   => $nuevoColor
-        ], 201);
+        return response()->json(['mensaje' => 'Color creado', 'id' => $id], 201);
     }
 
-    /**
-     * Mostrar un color específico
-     */
-    public function show(string $id)
+    public function update(Request $request, $id)
     {
-        $color = DB::table("colors")->where('id', $id)->first();
-
-        if (!$color) {
-            return response()->json(["mensaje" => "Color no encontrado"], 404);
-        }
-
-        return response()->json($color, 200);
-    }
-
-    /**
-     * Actualizar color
-     */
-    public function update(Request $request, string $id)
-    {
-        $request->validate([
-            "name"   => "required|max:50|unique:colors,name," . $id,
-            "status" => "boolean"
+        DB::table('colors')->where('id', $id)->update([
+            'name' => $request->name,
+            'hex_code' => $request->hex_code,
+            'updated_at' => now()
         ]);
-
-        $existe = DB::table("colors")->where('id', $id)->exists();
-
-        if (!$existe) {
-            return response()->json(["mensaje" => "Color no encontrado"], 404);
-        }
-
-        DB::table("colors")
-            ->where('id', $id)
-            ->update([
-                "name"       => $request->name,
-                "status"     => $request->status,
-                "updated_at" => now(),
-            ]);
-
-        return response()->json(["mensaje" => "Color actualizado correctamente"], 200);
+        return response()->json(['mensaje' => 'Color actualizado']);
     }
 
-    /**
-     * Eliminar color
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        $existe = DB::table("colors")->where('id', $id)->exists();
-
-        if (!$existe) {
-            return response()->json(["mensaje" => "Color no encontrado"], 404);
-        }
-
-        // Si el color ya se está usando en variantes, SQL impedirá el borrado (Integridad Referencial)
-        DB::table("colors")->where('id', $id)->delete();
-
-        return response()->json(["mensaje" => "Color eliminado"], 200);
+        DB::table('colors')->where('id', $id)->delete();
+        return response()->json(['mensaje' => 'Color eliminado']);
     }
+
 }

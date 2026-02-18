@@ -8,83 +8,36 @@ use Illuminate\Support\Facades\DB;
 
 class CategoriaController extends Controller
 {
-    //
     public function index() {
-        $categorias = DB::table('categories')
-            ->select('id', 'name', 'status', 'created_at')
-            ->orderBy('id', 'desc')
-            ->get();
-
-        return response()->json($categorias, 200);
+        return response()->json(Category::all(), 200);
     }
 
     public function store(Request $request) {
-        $request->validate([
-            "name" => "required|unique:categories,name|max:100"
+        $data = $request->validate([
+            'name' => 'required|string|unique:categories,name|max:255',
+            'status' => 'required|boolean'
         ]);
-
-        $id = DB::table("categories")->insertGetId([
-            "name"       => $request->name,
-            "status"     => $request->status ?? true,
-            "created_at" => now(),
-            "updated_at" => now()
-        ]);
-
-        $nuevaCategoria = DB::table("categories")->where('id', $id)->first();
-
-        return response()->json([
-            "mensaje" => "Categoría creada con éxito",
-            "datos"   => $nuevaCategoria
-        ], 201);
+        $category = Category::create($data);
+        return response()->json($category, 201);
     }
-     public function show(string $id)
-    {
-        $categoria = DB::table("categories")->where('id', $id)->first();
 
-        if (!$categoria) {
-            return response()->json(["mensaje" => "Categoría no encontrada"], 404);
-        }
-
-        return response()->json($categoria, 200);
+    public function show($id) {
+        return response()->json(Category::findOrFail($id));
     }
 
     public function update(Request $request, $id) {
-        // Validamos que el nombre sea único, pero ignorando el nombre de la categoría actual
-        $request->validate([
-            "name"   => "required|max:100|unique:categories,name," . $id,
-            "status" => "boolean"
+        $category = Category::findOrFail($id);
+        $data = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name,'.$id,
+            'status' => 'required|boolean'
         ]);
-
-        $existe = DB::table("categories")->where('id', $id)->exists();
-
-        if (!$existe) {
-            return response()->json(["mensaje" => "No se puede actualizar, categoría no encontrada"], 404);
-        }
-
-        DB::table("categories")
-            ->where('id', $id)
-            ->update([
-                "name"       => $request->name,
-                "status"     => $request->status,
-                "updated_at" => now(),
-            ]);
-
-        return response()->json(["mensaje" => "Categoría actualizada correctamente"], 200);
+        $category->update($data);
+        return response()->json($category);
     }
 
     public function destroy($id) {
-        $existe = DB::table("categories")->where('id', $id)->exists();
-
-            if (!$existe) {
-                return response()->json(["mensaje" => "Categoría no encontrada"], 404);
-            }
-
-            // Si usas SoftDeletes manual con Query Builder:
-            // DB::table("categories")->where('id', $id)->update(['deleted_at' => now()]);
-            
-            // Eliminación física:
-            DB::table("categories")->where('id', $id)->delete();
-
-            return response()->json(["mensaje" => "Categoría eliminada permanentemente"], 200);
+        $category = Category::findOrFail($id);
+        $category->delete();
+        return response()->json(['message' => 'Eliminado correctamente']);
     }
 }

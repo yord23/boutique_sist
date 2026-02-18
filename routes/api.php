@@ -41,12 +41,12 @@ Route::prefix('v1/auth')->group(function(){
 
         // --- MÓDULO DE MARCAS ---
         // Ruta para llenar selects en el frontend (sin paginación)
-        Route::get('marcas/listado', [MarcaController::class, 'getList']);
+        //Route::get('marcas/listado', [MarcaController::class, 'getList']);
         Route::apiResource('marcas', MarcaController::class);
 
         // --- MÓDULO DE PROVEEDORES ---
         // Ruta para llenar selects (sin paginación)
-        Route::get('proveedores/listado', [ProveedorController::class, 'getList']);
+        //Route::get('proveedores/listado', [ProveedorController::class, 'getList']);
         Route::apiResource('proveedores', ProveedorController::class);
 
         // --- MÓDULO DE TALLAS (SIZES) ---
