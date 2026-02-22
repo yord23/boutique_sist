@@ -10,6 +10,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\TallaController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\VentaController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -54,4 +55,5 @@ Route::prefix('v1/auth')->group(function(){
 
         // --- MÓDULO DE COLORES ---
         Route::apiResource('colores', ColorController::class);
+        Route::post('/ventas', [VentaController::class, 'store']);
     });
