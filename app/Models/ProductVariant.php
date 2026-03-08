@@ -10,7 +10,7 @@ class ProductVariant extends Model
 {
     //
     use HasFactory,SoftDeletes;
-    protected $fillable = ['product_id', 'size_id', 'color_id', 'barcode', 'stock', 'price'];
+    protected $fillable = ['product_id', 'size_id', 'color_id', 'barcode', 'stock', 'price', 'cost_price'];
 
     public function product() 
     { 

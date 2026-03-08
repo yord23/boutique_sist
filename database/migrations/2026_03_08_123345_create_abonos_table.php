@@ -11,15 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('daily_closings', function (Blueprint $table) {
+        Schema::create('abonos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained(); // Quien cierra caja
-            $table->date('date');
-            $table->decimal('opening_balance', 10, 2); // Con cuánto inició
-            $table->decimal('cash_sales', 10, 2);
-            $table->decimal('card_sales', 10, 2);
-            $table->decimal('final_balance', 10, 2);
+            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
+            $table->decimal('amount', 10, 2); // Monto que el cliente entrega
+            $table->string('payment_method')->default('cash'); // cash, transfer, etc.
             $table->text('notes')->nullable();
+            $table->date('date');
             $table->timestamps();
         });
     }
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('daily_closings');
+        Schema::dropIfExists('abonos');
     }
 };

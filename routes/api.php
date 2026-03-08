@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Controllers\AbonoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CajaController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\ProductoController;
@@ -56,4 +59,15 @@ Route::prefix('v1/auth')->group(function(){
         // --- MÓDULO DE COLORES ---
         Route::apiResource('colores', ColorController::class);
         Route::post('/ventas', [VentaController::class, 'store']);
+        // Rutas para el control de caja
+    Route::prefix('caja')->group(function () {
+        Route::get('/estado', [CajaController::class, 'estado']);
+        Route::post('/abrir', [CajaController::class, 'abrir']);
+        Route::post('/cerrar', [CajaController::class, 'cerrar']);
+        Route::get('/historial', [CajaController::class, 'historial']);
+        Route::get('stats', [CajaController::class, 'stats']);
+        Route::get('/clientes', [ClienteController::class, 'index']);
+        Route::post('/abonos', [AbonoController::class, 'store']);
+        Route::get('/abonos/cliente/{id}', [AbonoController::class, 'porCliente']);
+    });
     });
