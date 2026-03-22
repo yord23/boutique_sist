@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -149,5 +150,66 @@ class ProductoController extends Controller
         $product->delete();
         
         return response()->json(['message' => 'Producto eliminado por completo']);
+    }
+    public function search(Request $request) 
+    {
+        $query = $request->get('q');
+
+        // Buscamos variantes que coincidan por nombre de producto o por código de barras
+        return ProductVariant::with(['product', 'size', 'color'])
+            ->where(function($q) use ($query) {
+                $q->whereHas('product', function($sub) use ($query) {
+                    $sub->where('name', 'like', "%{$query}%");
+                })
+                ->orWhere('barcode', 'like', "%{$query}%");
+            })
+            ->limit(10) // Limitamos para que el Autocomplete no se sature
+            ->get();
+    }
+    public function stockActual()
+    {
+        // Obtenemos todas las variantes con sus datos de producto, color y talla
+        return ProductVariant::with(['product', 'size', 'color'])
+            ->get()
+            ->map(function ($variant) {
+                return [
+                    'id' => $variant->id,
+                    'producto' => $variant->product->name,
+                    'codigo' => $variant->barcode,
+                    'talla' => $variant->size->name ?? 'N/A',
+                    'color' => $variant->color->name ?? 'N/A',
+                    'stock' => $variant->stock,
+                    'precio' => $variant->price,
+                    'total_valor' => $variant->stock * $variant->price
+                ];
+            });
+    }
+        // Obtener datos
+    public function getPricingData() {
+        return ProductVariant::with(['product', 'size', 'color'])->get();
+    }
+
+    // Actualizar precio
+    public function updatePrice(Request $request, $id) {
+        // Validamos que los datos sean números positivos
+        $request->validate([
+            'price' => 'nullable|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0'
+        ]);
+        $variant = ProductVariant::findOrFail($id);
+    
+        // Si viene el precio, lo actualizamos
+        if ($request->has('price')) {
+            $variant->price = $request->price;
+        }
+        
+        // Si viene el costo, lo actualizamos
+        if ($request->has('cost_price')) {
+            $variant->cost_price = $request->cost_price;
+        }
+        
+        $variant->save();
+        
+        return response()->json(['message' => 'Datos actualizados','variant' => $variant]);
     }
 }

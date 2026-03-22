@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,44 +17,75 @@ class AuthController extends Controller
             "password" => "required"
         ]);
 
-        // autenticar (Laravel busca el usuario y compara el hash automáticamente)
+        // autenticar
         if(!Auth::attempt($credenciales)){
             return response()->json(["mensaje" => "Credenciales Incorrectas"], 401);
         }
 
-        // generar token
-        $token = $request->user()->createToken("token auth")->plainTextToken;
+        $user = Auth::user();
 
-        // responder (con el formato exacto de tu interceptor)
+        // 1. Verificamos si el usuario está activo (si usas la columna is_active)
+        if (!$user->is_active) {
+            Auth::logout();
+            return response()->json(["mensaje" => "Cuenta suspendida. Contacte al administrador."], 403);
+        }
+
+        // 2. Generar token
+        $token = $user->createToken("token auth")->plainTextToken;
+
+        // 3. Extraer Roles y Permisos para Vue
+        // getAllPermissions() trae los permisos del rol + los individuales
+        $permisos = $user->getAllPermissions()->pluck('name');
+        $rol = $user->getRoleNames()->first();
+
+        ActivityLog::storeLog('LOGIN', "El usuario {$user->name} inició sesión.");
+
+        // responder
         return response()->json([
             "access_token" => $token,
-            "user" => $request->user()
+            "token_type" => "Bearer",
+            "user" => [
+                "id" => $user->id,
+                "name" => $user->name,
+                "email" => $user->email,
+                "role" => $rol, // Rol dinámico de Spatie
+                "permissions" => $permisos // Lista de strings ['usuarios.crear', ...]
+            ]
         ], 201);
     }
 
     public function funRegister(Request $request){
-        // validar
-        $request->validate([
+     $request->validate([
             "name" => "required",
             "email" => "required|email|unique:users",
             "password" => "required|same:c_password"
         ]);
 
-        // guardamos usuarios
         $usuario = new User();
         $usuario->name = $request->name;
         $usuario->email = $request->email;
-        // IMPORTANTE: Encriptar antes de guardar para que funLogin funcione
         $usuario->password = Hash::make($request->password); 
+        $usuario->role = 'vendedor'; // Mantengo tu columna por compatibilidad
+        $usuario->is_active = true;
         $usuario->save();
 
-        // respondemos
+        // ASIGNACIÓN CON SPATIE
+        $usuario->assignRole('vendedor'); 
+
         return response()->json(["mensaje" => "Usuario Registrado"], 201);
     }
 
     public function funProfile(Request $request){
-        $usuario = $request->user();
-        return response()->json($usuario, 200);
+        $user = $request->user();
+        
+        // Al pedir el perfil, también refrescamos roles y permisos
+        return response()->json([
+            "id" => $user->id,
+            "name" => $user->name,
+            "email" => $user->email,
+            "role" => $user->getRoleNames()->first(),
+            "permissions" => $user->getAllPermissions()->pluck('name')
+        ], 200);
     }
 
     public function funLogout(Request $request){

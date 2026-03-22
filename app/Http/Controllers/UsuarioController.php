@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,12 +15,22 @@ class UsuarioController extends Controller
     public function index(Request $request)
     {
         //
-        $usuarios = User::select('id', 'name', 'email', 'role', 'phone', 'is_active')
-            ->where("name", "LIKE", "%$request->q%")
-            ->orderBy('id', 'desc')
-            ->get();
+        try {
+        $query = User::query();
+
+        if ($request->has('q')) {
+            $query->where("name", "LIKE", "%" . $request->q . "%");
+        }
+
+        // AGREGAMOS ->with('permissions') para que Vue reciba los permisos de cada usuario
+        $usuarios = $query->with('permissions') 
+                          ->orderBy('id', 'desc')
+                          ->get();
 
         return response()->json($usuarios, 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
     }
 
     /**
@@ -53,6 +64,15 @@ class UsuarioController extends Controller
         $usuario->is_active = true; // Por defecto entra activo
         $usuario->save();
 
+        // NUEVO: Spatie - Asigna el rol en la tabla de permisos
+        $usuario->assignRole($request->role);
+
+        // NUEVO: Spatie - Si desde Vue mandamos permisos extra directos
+        if ($request->has('permissions_list')) {
+            $usuario->syncPermissions($request->permissions_list);
+        }
+        // REGISTRO EN AUDITORÍA
+        ActivityLog::storeLog('CREAR_USUARIO', "Se registró al nuevo usuario: {$usuario->name} con rol {$usuario->role}");
         return response()->json(["mensaje" => "Usuario registrado"], 201);
     }
 
@@ -91,6 +111,8 @@ class UsuarioController extends Controller
         ]);
         
         $usuario = User::findOrFail($id);
+        // Guardamos el rol anterior para el log si es que cambia
+        $rolAnterior = $usuario->role;
         $usuario->name = $request->name;
         $usuario->email = $request->email;
         $usuario->role = $request->role;
@@ -106,6 +128,15 @@ class UsuarioController extends Controller
         }
 
         $usuario->save();
+        // NUEVO: Spatie - Sincroniza el rol (quita el viejo y pone el nuevo)
+        $usuario->syncRoles([$request->role]);
+
+        // NUEVO: Spatie - Sincroniza permisos manuales enviados desde Vue
+        if ($request->has('permissions_list')) {
+            $usuario->syncPermissions($request->permissions_list);
+        }
+        // REGISTRO EN AUDITORÍA
+        ActivityLog::storeLog('EDITAR_USUARIO', "Se actualizaron los datos de: {$usuario->name}. Rol previo: {$rolAnterior}, Nuevo rol: {$usuario->role}");
 
         return response()->json(["mensaje" => "Usuario actualizado"], 200);
     
@@ -118,8 +149,11 @@ class UsuarioController extends Controller
     {
         //
         $usuario = User::findOrFail($id);
+        $nombreEliminado = $usuario->name;
         $usuario->delete();
 
+        // REGISTRO EN AUDITORÍA
+        ActivityLog::storeLog('ELIMINAR_USUARIO', "Se eliminó al usuario: {$nombreEliminado}");
         return response()->json(["mensaje" => "Usuario eliminado permanentemente"], 200);
     }
 

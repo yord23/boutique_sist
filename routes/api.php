@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AbonoController;
+use App\Http\Controllers\ActivityLogController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -9,8 +10,12 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\MarcaController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\TallaController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VentaController;
@@ -69,5 +74,26 @@ Route::prefix('v1/auth')->group(function(){
         Route::get('/clientes', [ClienteController::class, 'index']);
         Route::post('/abonos', [AbonoController::class, 'store']);
         Route::get('/abonos/cliente/{id}', [AbonoController::class, 'porCliente']);
+            // Rutas de Compras e Inventario
+        Route::post('purchases', [PurchaseController::class, 'store']);
+        Route::get('inventory/alerts', [PurchaseController::class, 'alerts']);
+        // En routes/api.php
+        Route::get('products/search', [ProductoController::class, 'search']);
+        Route::get('purchases', [PurchaseController::class, 'index']);
+
+        Route::get('inventory/report', [ProductoController::class, 'stockActual']);
+        Route::get('products/pricing', [ProductoController::class, 'getPricingData']);
+        Route::put('products/{id}/price', [ProductoController::class, 'updatePrice']);
     });
+    // routes/api.php
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Cambiamos audit-logs por auditoria
+    Route::get('/v1/auditoria', [ActivityLogController::class, 'index']);
+
+    Route::get('roles', [RoleController::class, 'index']);
+    Route::get('permisos', [PermissionController::class, 'index']);
+    Route::post('usuarios/{id}/asignar-permisos', [UsuarioController::class, 'asignarPermisos']);
+    Route::apiResource('roles-gestion', RolePermissionController::class);
+Route::delete('roles/{id}/permisos', [RolePermissionController::class, 'syncPermisos']);
+});
     });

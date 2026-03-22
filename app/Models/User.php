@@ -8,13 +8,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens; // Revisa que esta línea esté
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, SoftDeletes;
+    use HasApiTokens, SoftDeletes, HasRoles;
 
-    protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'phone'];
+    protected $fillable = [
+        'name', 
+        'email', 
+        'password', 
+        'role', 
+        'is_active', 
+        'phone'];
 
     // Relación: Un usuario puede realizar muchas ventas
     public function orders()
